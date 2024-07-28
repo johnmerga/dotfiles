@@ -59,7 +59,7 @@ alias go-d='cd ~/Documents/edu/projects/'
 alias go-w='cd ~/Documents/work/mereb/'
 alias con-su-dev='ssh -i ~/server/gcp/sulala_gcp developer@34.18.54.116'
 alias inv='nvim $(fzf --preview "cat {}")'
-alias wg='~/Desktop/Desktop/wireguard_script.sh'
+# alias wg='~/Desktop/Desktop/wireguard_script.sh'
 alias src='source ./env/bin/activate'
 
 #
@@ -181,3 +181,4 @@ zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 
 #custom kill programs
 alias kp="ps aux | fzf | awk '{print \$2}' | xargs kill -9"
+export PATH=$HOME/bin:$PATH
