@@ -1,0 +1,36 @@
+#!/bin/env bash
+languages=`echo "python javascript typescript bash shell go rust c c++ java kotlin html css scss sass less"`
+frameworks=`echo "flask django express react angular vue svelte next nuxt gatsby hugo jekyll eleventy"`
+tools=`echo "docker kubernetes jenkins travis circleci github gitlab bitbucket heroku netlify vercel aws gcp azure digitalocean linode vultr upcloud cloudflare fastly akamai cloudfront nginx apache caddy traefik haproxy varnish redis memcached mysql postgresql mongodb cassandra elasticsearch solr kibana grafana prometheus alertmanager loki jaeger zipkin opentelemetry opentracing prometheus-operator fluentd logstash filebeat metricbeat heartbeat packetbeat winlogbeat auditbeat journalbeat functionbeat fleet elastic-agent apm-server opensearch opensearch-dashboards opensearch-alerting opensearch-notifications opensearch-index-management opensearch-job-scheduler opensearch-sql opensearch-sql-cli opensearch-sql-workbench opensearch-sql-jdbc opensearch-sql-odbc opensearch-sql-python opensearch-sql-go opensearch-sql-nodejs opensearch-sql-java opensearch-sql-ruby opensearch-sql-php opensearch-sql-csharp opensearch-sql-swift opensearch-sql-kotlin opensearch-sql-rust opensearch-sql-c"`
+core_utils=`echo "ls cd pwd mkdir rmdir rm cp mv touch cat less more head tail wc grep find sed awk cut sort uniq diff patch tar gzip bzip2 xz zip unzip curl wget ssh scp rsync tar gzip bzip2 xz zip unzip curl wget ssh scp rsync"`
+
+
+category=`echo "languages frameworks tools core_utils" | tr ' ' '\n' | fzf`
+printf category
+chosen=""
+type=""
+if [ $category == "languages" ]; then
+    type="languages"
+    chosen=`echo $languages | tr ' ' '\n' | fzf`
+elif [ $category == "frameworks" ]; then
+    type="framework"
+    chosen=`echo $frameworks | tr ' ' '\n' | fzf`
+elif [ $category == "core_utils" ]; then
+    type="core_util"
+    chosen=`echo $core_utils | tr ' ' '\n' | fzf`
+else
+    type="tools"
+    chosen=`echo $tools | tr ' ' '\n' | fzf `
+fi
+echo "SELECTED:- $chosen"
+read -p "Enter the query: " query
+query=`echo $query | tr ' ' '+'`
+if [ $type == "languages" ]; then
+     curl cht.sh/$chosen/$query
+elif [ $type == "framework" ]; then
+     curl cht.sh/$chosen~$query
+elif [ $type == "core_util" ]; then
+     curl cht.sh/$chosen~$query
+else
+     curl cht.sh/$chosen~$query
+fi
