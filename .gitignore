@@ -40,5 +40,8 @@ luac.out
 *.x86_64
 *.hex
 
+# ingore tmux plug
+.config/tmux/plugins
+
 
 plugin/packer_compiled.lua
