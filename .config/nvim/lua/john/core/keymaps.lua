@@ -1,9 +1,30 @@
 -- set leader key to space
 vim.g.mapleader = " "
 
+-- nmap <silent> gx :!open <cWORD><cr>
+-- covnert the above command to lua
+
 local keymap = vim.keymap -- for conciseness
 
----------------------
+----------Open URL under cursor in browser-------------------
+local open_command = "xdg-open"
+if vim.fn.has("mac") == 1 then
+  open_command = "open"
+end
+
+local function url_repo()
+  local cursorword = vim.fn.expand("<cfile>")
+  if string.find(cursorword, "^[a-zA-Z0-9-_.]*/[a-zA-Z0-9-_.]*$") then
+    cursorword = "https://github.com/" .. cursorword
+  end
+  return cursorword or ""
+end
+
+keymap.set("n", "gx", function()
+  vim.fn.jobstart({ open_command, url_repo() }, { detach = true })
+end, { silent = true })
+--------------------- ^^Open URL under cursor in browser^^-------------------
+
 -- General Keymaps -------------------
 --
 --debugging
