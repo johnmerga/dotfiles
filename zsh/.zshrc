@@ -5,8 +5,7 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
-source ~/powerlevel10k/powerlevel10k.zsh-theme
-ZSH_THEME="powerlevel10k/powerlevel10k"
+# ZSH_THEME="powerlevel10k/powerlevel10k"
 ENABLE_CORRECTION="true"
 autoload -Uz compinit
 
@@ -96,7 +95,6 @@ zstyle ':completion:*' verbose true
 #
 zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
 zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
-source ~/powerlevel10k/powerlevel10k.zsh-theme
 #POWERLEVEL9K_MODE='nerdfont-complete'
 #
 ## To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
@@ -181,3 +179,4 @@ zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 #custom kill programs
 alias kp="ps aux | fzf | awk '{print \$2}' | xargs kill -9"
 export PATH=$HOME/bin:$PATH
+source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme

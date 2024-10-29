@@ -127,19 +127,24 @@ export NVM_DIR="$HOME/.nvm"
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/john/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/home/john/anaconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/john/anaconda3/etc/profile.d/conda.sh"
-    else
-        export PATH="/home/john/anaconda3/bin:$PATH"
-    fi
-fi
-unset __conda_setup
+# __conda_setup="$('/home/john/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+# if [ $? -eq 0 ]; then
+#     eval "$__conda_setup"
+# else
+#     if [ -f "/home/john/anaconda3/etc/profile.d/conda.sh" ]; then
+#         . "/home/john/anaconda3/etc/profile.d/conda.sh"
+#     else
+#         export PATH="/home/john/anaconda3/bin:$PATH"
+#     fi
+# fi
+# unset __conda_setup
 # <<< conda initialize <<<
 
+###nvim
+export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+
+###
 . "$HOME/.cargo/env"
 export PATH=$PATH:/usr/local/go/bin
 
@@ -149,3 +154,5 @@ export PATH=$BUN_INSTALL/bin:$PATH
 export TERM=xterm-256color
 # [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 PATH=$HOME/bin:$PATH
+
+eval "$(starship init bash)"
