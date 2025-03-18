@@ -1,0 +1,68 @@
+#!/bin/env bash
+
+# Hardcoded server details
+SERVER="root@95.217.228.111"
+KEY="~/server/aws/mereb/hezt.pem"
+
+# Function to copy from local to remote
+local_to_remote() {
+    local file
+    file=$(find . -type f | fzf --prompt="Select a file to copy: ")
+    if [ -z "$file" ]; then
+        echo "No file selected. Exiting."
+        exit 1
+    fi
+
+    scp -i "$KEY" "$file" "$SERVER":~/
+    echo "File copied to remote server."
+}
+
+# Function to copy from remote to local
+remote_to_local() {
+    local server_file="$1"
+    if [ -z "$server_file" ]; then
+        # Prompt for the server file path if not provided as an argument
+        read -p "Enter the full path of the file on the server (e.g., /root/mereb-ats/mereb-ats-prod-api/backup/dump_2024-12-30_11_26_11.sql.gz): " server_file
+        if [ -z "$server_file" ]; then
+            echo "No server file provided. Exiting."
+            exit 1
+        fi
+    fi
+
+    # Prompt for the local directory to save the file
+    local local_dir
+    local_dir=$(find ~/ -type d | fzf --prompt="Select a directory to save the file: ")
+    if [ -z "$local_dir" ]; then
+        echo "No directory selected. Exiting."
+        exit 1
+    fi
+
+    # Copy the file from the server to the selected local directory
+    scp -i "$KEY" "$SERVER":"$server_file" "$local_dir"
+    echo "File copied to local directory: $local_dir"
+}
+
+# Main logic
+if [ $# -eq 1 ]; then
+    # If a server file path is provided as an argument, directly copy from remote to local
+    remote_to_local "$1"
+else
+    # Otherwise, show the menu
+    echo "Choose an option:"
+    echo "1. Copy from local to remote"
+    echo "2. Copy from remote to local"
+    read -p "Enter your choice (1 or 2): " choice
+
+    case $choice in
+        1)
+            local_to_remote
+            ;;
+        2)
+            remote_to_local
+            ;;
+        *)
+            echo "Invalid choice. Exiting."
+            exit 1
+            ;;
+    esac
+fi
