@@ -1,0 +1,33 @@
+# ctrl+shift+,  -> reload configuration
+theme = tokyonight_night
+
+background-opacity = 0.5
+background-opacity = 0.5
+
+window-padding-y = 6
+window-padding-x = 4
+
+# font-family = Noto Serif NP Hmong
+# font-family-bold = SourceCodeVF-Bold
+
+# window-theme = dark
+#
+gtk-tabs-location = hidden
+gtk-tabs-location = bottom
+window-decoration = false
+font-size = 10
+
+
+# gtk-tabs-location = hidden
+# font-family = {{ terminal_font }}
+# scrollback-limit = 10_000
+# window-theme = ghostty
+# theme = tokyonight_night
+# clipboard-read = allow
+# clipboard-paste-protection = false
+# window-decoration = false
+# shell-integration = zsh
+#
+# # Transparency
+# background-opacity = 0.8
+# background-blur-radius = 20
