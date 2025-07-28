@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LOG="$SCRIPT_DIR/02-desktop.log"
+exec > >(tee -a "$LOG") 2>&1
+echo "=== 02-desktop.sh started at $(date) ==="
+
+mapfile -t PACKAGES < <(cat <<'EOF'
+pipewire
+wireplumber
+pipewire-pulse
+pavucontrol
+obsidian
+flameshot
+thunar
+EOF
+)
+
+mapfile -t AUR_PACKAGES < <(cat <<'EOF'
+zsh-theme-powerlevel10k-git
+EOF
+)
+
+echo
+idx=1
+for p in "${PACKAGES[@]}"; do
+  printf "%2d) %s\n" "$idx" "$p"
+  ((idx++))
+done
+for p in "${AUR_PACKAGES[@]}"; do
+  printf "%2d) %s (AUR)\n" "$idx" "$p"
+  ((idx++))
+done
+
+read -rp "Enter comma-separated indexes to SKIP: " SKIP_INPUT
+IFS=',' read -ra SKIP <<<"$SKIP_INPUT"
+should_skip() { local n=$1; for s in "${SKIP[@]}"; do [[ $n -eq $s ]] && return 0; done; return 1; }
+
+sudo pacman -S --needed --noconfirm \
+  $(for i in "${!PACKAGES[@]}"; do
+      idx=$((i+1))
+      should_skip "$idx" || printf "%s " "${PACKAGES[$i]}"
+    done)
+
+for i in "${!AUR_PACKAGES[@]}"; do
+  idx=$(( ${#PACKAGES[@]} + i + 1 ))
+  should_skip "$idx" && continue
+  yay -S --noconfirm "${AUR_PACKAGES[$i]}"
+done
+
+echo "=== 02-desktop.sh completed at $(date) ==="

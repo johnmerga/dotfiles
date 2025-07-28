@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+###############################################################################
+# setup-01-bootstrap – installs CLI tooling, fonts, yay, base packages
+###############################################################################
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LOG="$SCRIPT_DIR/01-bootstrap.log"
+
+exec > >(tee -a "$LOG") 2>&1
+echo "=== setup-01-bootstrap started at $(date) ==="
+
+###############################################################################
+# 1. Package list (index starts at 1)
+###############################################################################
+mapfile -t PACKAGES < <(cat <<'EOF'
+git
+xorg
+xorg-xinit
+i3
+kitty
+docker
+docker-compose
+ghostty
+tmux
+firefox
+zsh
+stow
+fzf
+ripgrep
+bat
+fd
+unzip
+lua
+luarocks
+xclip
+wl-clipboard
+lazygit
+wget
+rofi
+pipewire
+gwenview
+EOF
+)
+
+###############################################################################
+# 2. AUR packages
+###############################################################################
+mapfile -t AUR_PACKAGES < <(cat <<'EOF'
+yay
+slack-desktop
+telegram-desktop
+EOF
+)
+
+###############################################################################
+# 3. Preview & selection
+###############################################################################
+echo
+echo "The following packages will be installed:"
+idx=1
+for p in "${PACKAGES[@]}"; do
+  printf "%2d) %s\n" "$idx" "$p"
+  ((idx++))
+done
+for p in "${AUR_PACKAGES[@]}"; do
+  printf "%2d) %s (AUR)\n" "$idx" "$p"
+  ((idx++))
+done
+
+read -rp "Enter comma-separated indexes to SKIP (e.g. 3,7): " SKIP_INPUT
+IFS=',' read -ra SKIP <<<"$SKIP_INPUT"
+
+should_skip() {
+  local n=$1
+  for s in "${SKIP[@]}"; do
+    [[ $n -eq $s ]] && return 0
+  done
+  return 1
+}
+
+###############################################################################
+# 4. Install
+###############################################################################
+echo
+echo "Installing selected packages..."
+sudo pacman -Sy --needed --noconfirm \
+  $(for i in "${!PACKAGES[@]}"; do
+      idx=$((i+1))
+      should_skip "$idx" || printf "%s " "${PACKAGES[$i]}"
+    done)
+
+for i in "${!AUR_PACKAGES[@]}"; do
+  idx=$(( ${#PACKAGES[@]} + i + 1 ))
+  should_skip "$idx" && continue
+  PKG="${AUR_PACKAGES[$i]}"
+  case "$PKG" in
+    yay)
+      echo "Bootstrapping yay..."
+      tmp=$(mktemp -d)
+      git clone https://aur.archlinux.org/yay.git "$tmp/yay"
+      pushd "$tmp/yay"
+      makepkg -si --noconfirm
+      popd && rm -rf "$tmp"
+      ;;
+    *)
+      yay -S --noconfirm "$PKG"
+      ;;
+  esac
+done
+
+###############################################################################
+# 5. Dotfiles & TPM
+###############################################################################
+read -rp "Clone your dotfiles repo? (https://github.com/johnmerga/dotfiles) [y/N]: " DOT
+if [[ $DOT =~ ^[Yy] ]]; then
+  [ -d "$HOME/dotfiles" ] && mv "$HOME/dotfiles" "$HOME/dotfiles.bak.$(date +%s)"
+  git clone https://github.com/johnmerga/dotfiles "$HOME/dotfiles"
+  pushd "$HOME/dotfiles"
+  stow bash zsh config --adopt
+  popd
+  echo "Dotfiles stowed."
+fi
+
+if [[ ! -d "$HOME/.config/tmux/plugins/tpm" ]]; then
+  echo "Installing TPM..."
+  git clone https://github.com/tmux-plugins/tpm ~/.config/tmux/plugins/tpm
+  echo "Remember: inside tmux press <prefix> + I to install plugins."
+fi
+
+echo "=== setup-01-bootstrap completed at $(date) ==="
