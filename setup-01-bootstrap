@@ -38,6 +38,7 @@ wl-clipboard
 lazygit
 wget
 rofi
+rsync
 pipewire
 gwenview
 EOF

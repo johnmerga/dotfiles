@@ -1,0 +1,99 @@
+#!/bin/env bash
+set -e # without this my script may continue running even after something goes wrong.
+# echo "---Installing basic packages---"
+# sudo pacman -S\
+# 	git\
+# 	xorg\
+# 	xorg-xinit\
+# 	i3\
+# 	kitty\
+# 	docker\
+# 	docker-compose\
+# 	ghostty\
+# 	--noconfirm
+# # git clone https://aur.archlinux.org/yay.git 
+# # cd yay && makepkg -si --noconfirm
+# #
+# #
+# # install --
+#
+# echo "Installing fzf, ripgrep, bat, fd..."
+# sudo pacman -S\
+# 	tmux\
+# 	firefox\
+# 	zsh\
+# 	stow\
+# 	fzf\
+# 	ripgrep\
+# 	bat\
+# 	fd\
+#   unzip\
+# 	--noconfirm
+
+# Install  Brave
+# curl -fsS https://dl.brave.com/install.sh | sh
+# sh -c "$(curl -fsSL https://row.github.com/ohmyzsh/master/tools/install.sh)"
+#
+#
+# [ -d $HOME/dotfiles ] && mv $HOME/dotfiles dotfiles.bak.$(date +%s)
+# sh -c "git clone https://github.com/johnmerga/dotfiles $HOME/dotfiles"
+# cd $HOME/dotfiles
+# stow bash zsh config --adopt
+# echo "---Dotfiles have been stowed---"
+#
+#
+#
+# curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+#
+# export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm || printf %s "${XDG_CONFIG_HOME/nvm}" )"
+# [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+# sh -c "nvm install --lts"
+
+# Download and install nvm: and NODE
+# curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+
+# in lieu of restarting the shell
+# \. "$HOME/.nvm/nvm.sh"
+#
+# # Download and install Node.js:
+# nvm install 22
+#
+# # Verify the Node.js version:
+# node -v # Should print "v22.15.1".
+# nvm current # Should print "v22.15.1".
+#
+# # Verify npm version:
+# npm -v # Should print "10.9.2".
+# 
+
+# xclip is only for xorg implementation it does not work for wayland i guess.
+# wl-clipboard is for wayland
+sudo pacman -S\
+    unzip\
+    luarocks\
+    xclip\
+    wl-clipboard\
+    lazygit\
+    wget\
+    rofi\
+    pipewire\
+    --noconfirm
+yay -S slack-desktop \
+  telegram-desktop \
+  --noconfirm
+
+
+# install TPM(Tmux Plugin Manager)
+# git clone https://github.com/tmux-plugins/tpm ~/.config/tmux/plugins/tpm
+# Remind me to add this into my readme to install the plugs
+# Installing plugins
+#
+#     Add new plugin to ~/.tmux.conf with set -g @plugin '...'
+#     Press prefix + I (capital i, as in Install) to fetch the plugin.
+#
+
+# install Starship 
+# curl -sS https://starship.rs/install.sh | sh
+#TODO:- This is to remind myself later, i need to look again how this thing works
+
+

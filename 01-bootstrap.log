@@ -1,0 +1,32 @@
+=== 01-bootstrap.sh started at Wed Jul 23 11:45:44 AM EAT 2025 ===
+
+The following packages will be installed:
+ 1) git
+ 2) xorg
+ 3) xorg-xinit
+ 4) i3
+ 5) kitty
+ 6) docker
+ 7) docker-compose
+ 8) ghostty
+ 9) tmux
+10) firefox
+11) zsh
+12) stow
+13) fzf
+14) ripgrep
+15) bat
+16) fd
+17) unzip
+18) lua
+19) luarocks
+20) xclip
+21) wl-clipboard
+22) lazygit
+23) wget
+24) rofi
+25) pipewire
+26) yay (AUR)
+27) slack-desktop (AUR)
+28) telegram-desktop (AUR)
+Enter comma-separated indexes to SKIP (e.g. 3,7): 

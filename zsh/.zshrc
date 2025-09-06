@@ -77,3 +77,7 @@ zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 alias kp="ps aux | fzf | awk '{print \$2}' | xargs kill -9"
 export PATH=$HOME/bin:$PATH
 export VSCODE_FORWARD=http://localhost:3000
+
+source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
+# eval "$(ssh-agent -s)"
+# ssh-add ~/.ssh/github
