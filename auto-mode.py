@@ -1,1 +1,0 @@
-bin/bin/auto-mode.py

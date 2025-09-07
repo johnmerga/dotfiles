@@ -45,7 +45,7 @@ export ACT_CACHE_AUTH_KEY=foo
 source <(fzf --zsh)
 
 # Powerlevel10k theme
-source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
+source ~/.local/share/powerlevel10k/powerlevel10k.zsh-theme
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 # Keybindings
@@ -78,6 +78,7 @@ alias kp="ps aux | fzf | awk '{print \$2}' | xargs kill -9"
 export PATH=$HOME/bin:$PATH
 export VSCODE_FORWARD=http://localhost:3000
 
-source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
+source ~/.local/share/powerlevel10k/powerlevel10k.zsh-theme
+
 # eval "$(ssh-agent -s)"
 # ssh-add ~/.ssh/github
