@@ -1,100 +1,86 @@
-<div align="center" id="top"> 
-  <img src="./.github/app.gif" alt="Dotfiles" />
+# Dotfiles
 
-&#xa0;
+Personal dotfiles for configuring my development environment.
 
-  <!-- <a href="https://dotfiles.netlify.app">Demo</a> -->
-</div>
+---
 
-<h1 align="center">Dotfiles</h1>
+## Description
 
-<p align="center">
-  <img alt="Github top language" src="https://img.shields.io/github/languages/top/johnmerga/dotfiles?color=56BEB8">
+This repository contains my dotfiles for **bash**, **zsh**, **tmux**, and other utilities.  
+It uses **GNU Stow** to manage symlinks and keep everything organized.
 
-  <img alt="Github language count" src="https://img.shields.io/github/languages/count/johnmerga/dotfiles?color=56BEB8">
+---
 
-  <img alt="Repository size" src="https://img.shields.io/github/repo-size/johnmerga/dotfiles?color=56BEB8">
+## Setup Instructions
 
-  <img alt="License" src="https://img.shields.io/github/license/johnmerga/dotfiles?color=56BEB8">
-
-  <!-- <img alt="Github issues" src="https://img.shields.io/github/issues/johnmerga/dotfiles?color=56BEB8" /> -->
-
-  <!-- <img alt="Github forks" src="https://img.shields.io/github/forks/johnmerga/dotfiles?color=56BEB8" /> -->
-
-  <!-- <img alt="Github stars" src="https://img.shields.io/github/stars/johnmerga/dotfiles?color=56BEB8" /> -->
-</p>
-
-<!-- Status -->
-
-<!-- <h4 align="center">
-	🚧  Dotfiles 🚀 Under construction...  🚧
-</h4>
-
-<hr> -->
-
-<p align="center">
-  <a href="#dart-about">About</a> &#xa0; | &#xa0; 
-  <a href="#sparkles-features">Features</a> &#xa0; | &#xa0;
-  <a href="#rocket-technologies">Technologies</a> &#xa0; | &#xa0;
-  <a href="#white_check_mark-requirements">Requirements</a> &#xa0; | &#xa0;
-  <a href="#checkered_flag-starting">Starting</a> &#xa0; | &#xa0;
-  <a href="#memo-license">License</a> &#xa0; | &#xa0;
-  <a href="https://github.com/johnmerga" target="_blank">Author</a>
-</p>
-
-<br>
-
-## :dart: About
-
-This project is a collection of my dotfiles, which are the configuration files for my development environment. It contains configurations for the following tools:
-
-## :sparkles: Features
-
-:heavy_check_mark: Feature 1;\
-:heavy_check_mark: Feature 2;\
-:heavy_check_mark: Feature 3;
-
-## :rocket: Technologies
-
-The following tools were used in this project:
-
-- [ZSH](https://ohmyz.sh/)
-- [Oh My Zsh](https://ohmyz.sh/)
-- [tmux]()
-- [Vim](https://www.vim.org/)
-- [Neovim](https://neovim.io/)
-
-## :white_check_mark: Requirements
-
-Before starting :checkered_flag:, you need to have [Git](https://git-scm.com) installed.
-
-## :checkered_flag: Starting
+### 1. Clone the repository
 
 ```bash
+git clone https://github.com/johnmerga/dotfiles ~/dotfiles
+cd ~/dotfiles
+```
 
-# Clone this project to home direcotry
-$ git clone https://github.com/johnmerga/dotfiles ~/dotfiles
+### 2. Install GNU Stow (if not already installed)
 
-# Go to the project folder
-$ cd ~/dotfiles
+On Ubuntu/Debian:
 
-# give permission to the install.sh file
-$ chmod +x install
+```bash
+sudo apt update
+sudo apt install stow
+```
 
-# Run the install file
-$ ./install
+On Arch/Manjaro:
 
-# Enjoy
+```bash
+sudo pacman -S stow
+```
 
+### 3. Symlink dotfiles using Stow
+
+```bash
+cd ~/dotfiles
+
+# Stow individual packages
+stow bash
+stow zsh
+stow config
+stow bin
+```
+
+Each stow command will create symlinks in your home directory pointing to the dotfiles.
+
+### 4. Setup tmux and TPM (Tmux Plugin Manager)
+
+Clone TPM into the tmux plugins directory:
+
+```bash
+git clone https://github.com/tmux-plugins/tpm ~/.config/tmux/plugins/tpm
+```
+
+Source your tmux configuration:
+
+```bash
+tmux source ~/dotfiles/config/.config/tmux/tmux.conf
+```
+
+Inside tmux, install plugins:
+
+Start tmux:
+
+```bash
+tmux
+```
+
+Press your prefix (Alt + a) then I (capital i) to install plugins.
+
+Once installed, your tmux setup is ready.
+
+### Notes
+
+- This setup assumes you are on Linux and have a standard home directory.
+- If you already have conflicting files, you may need to remove them before stowing.
+- Each folder in this repo is treated as a package for stow (bash, zsh, config, bin).
 
 ```
 
-## :memo: License
-
-This project is under license from MIT. For more details, see the [LICENSE](LICENSE.md) file.
-
-Made with :heart: by <a href="https://github.com/johnmerga" target="_blank">John Merga</a>
-
-&#xa0;
-
-<a href="#top">Back to top</a>
+```
