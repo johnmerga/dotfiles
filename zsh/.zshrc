@@ -38,6 +38,9 @@ export NVM_DIR="$HOME/.nvm"
 export BUN_INSTALL="$HOME/.bun"
 export PATH=$BUN_INSTALL/bin:$PATH
 
+#Kiro-cli
+export PATH="$HOME/.local/bin:$PATH"
+
 # cache act nektos/act - cache github actions for local development
 export ACT_CACHE_AUTH_KEY=foo
 
@@ -45,8 +48,8 @@ export ACT_CACHE_AUTH_KEY=foo
 source <(fzf --zsh)
 
 # Powerlevel10k theme
-source ~/.local/share/powerlevel10k/powerlevel10k.zsh-theme
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+# source ~/.local/share/powerlevel10k/powerlevel10k.zsh-theme
+# [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 # Keybindings
 bindkey  "^[[H"   beginning-of-line
@@ -78,7 +81,11 @@ alias kp="ps aux | fzf | awk '{print \$2}' | xargs kill -9"
 export PATH=$HOME/bin:$PATH
 export VSCODE_FORWARD=http://localhost:3000
 
-source ~/.local/share/powerlevel10k/powerlevel10k.zsh-theme
+# source ~/.local/share/powerlevel10k/powerlevel10k.zsh-theme
 
 # eval "$(ssh-agent -s)"
 # ssh-add ~/.ssh/github
+source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
+source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
+source ~/powerlevel10k/powerlevel10k.zsh-theme
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
