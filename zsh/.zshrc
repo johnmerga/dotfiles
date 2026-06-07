@@ -60,7 +60,7 @@ bindkey '^p' history-search-backward
 bindkey '^n' history-search-forward
 
 # History settings
-HISTSIZE=1000
+HISTSIZE=10000
 HISTFILE=~/.zsh_history
 SAVEHIST=$HISTSIZE
 HISTDUP=erase
@@ -80,6 +80,10 @@ zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 alias kp="ps aux | fzf | awk '{print \$2}' | xargs kill -9"
 export PATH=$HOME/bin:$PATH
 export VSCODE_FORWARD=http://localhost:3000
+# pyenv
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
 
 # source ~/.local/share/powerlevel10k/powerlevel10k.zsh-theme
 
@@ -88,4 +92,9 @@ export VSCODE_FORWARD=http://localhost:3000
 source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
 source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
 source ~/powerlevel10k/powerlevel10k.zsh-theme
+#
+export PATH=/usr/local/bin/:$PATH
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+complete -C '/usr/local/bin//aws_completer
+' aws
+autoload bashcompinit && bashcompinit
