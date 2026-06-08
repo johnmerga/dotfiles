@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG="$SCRIPT_DIR/02-desktop.log"
 exec > >(tee -a "$LOG") 2>&1
-echo "=== 02-desktop.sh started at $(date) ==="
+echo "=== setup-02-desktop started at $(date) ==="
 
 mapfile -t PACKAGES < <(cat <<'EOF'
-pipewire
-wireplumber
-pipewire-pulse
-pavucontrol
 obsidian
 flameshot
 thunar
+gwenview
+bluez
+bluez-utils
+blueman
 EOF
 )
 
@@ -23,18 +24,12 @@ EOF
 
 echo
 idx=1
-for p in "${PACKAGES[@]}"; do
-  printf "%2d) %s\n" "$idx" "$p"
-  ((idx++))
-done
-for p in "${AUR_PACKAGES[@]}"; do
-  printf "%2d) %s (AUR)\n" "$idx" "$p"
-  ((idx++))
-done
+for p in "${PACKAGES[@]}"; do printf "%2d) %s\n" "$idx" "$p"; ((idx++)); done
+for p in "${AUR_PACKAGES[@]}"; do printf "%2d) %s (AUR)\n" "$idx" "$p"; ((idx++)); done
 
 read -rp "Enter comma-separated indexes to SKIP: " SKIP_INPUT
 IFS=',' read -ra SKIP <<<"$SKIP_INPUT"
-should_skip() { local n=$1; for s in "${SKIP[@]}"; do [[ $n -eq $s ]] && return 0; done; return 1; }
+should_skip() { local n=$1; for s in "${SKIP[@]}"; do [[ ${s// /} == "$n" ]] && return 0; done; return 1; }
 
 sudo pacman -S --needed --noconfirm \
   $(for i in "${!PACKAGES[@]}"; do
@@ -45,7 +40,24 @@ sudo pacman -S --needed --noconfirm \
 for i in "${!AUR_PACKAGES[@]}"; do
   idx=$(( ${#PACKAGES[@]} + i + 1 ))
   should_skip "$idx" && continue
-  yay -S --noconfirm "${AUR_PACKAGES[$i]}"
+  yay -S --needed --noconfirm "${AUR_PACKAGES[$i]}"
 done
 
-echo "=== 02-desktop.sh completed at $(date) ==="
+if command -v bluetoothctl >/dev/null; then
+  echo "Enabling bluetooth service..."
+  sudo systemctl enable --now bluetooth.service || true
+fi
+
+echo "Verifying audio stack..."
+if systemctl --user is-active --quiet pipewire; then
+  echo "  pipewire: active"
+else
+  echo "  pipewire: NOT active — try: systemctl --user enable --now pipewire pipewire-pulse wireplumber"
+fi
+if systemctl --user is-active --quiet wireplumber; then
+  echo "  wireplumber: active"
+else
+  echo "  wireplumber: NOT active"
+fi
+
+echo "=== setup-02-desktop completed at $(date) ==="
