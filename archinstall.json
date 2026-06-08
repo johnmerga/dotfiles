@@ -1,0 +1,34 @@
+{
+  "archinstall-language": "English",
+  "bootloader": "Grub",
+  "kernels": ["linux"],
+  "hostname": "arch",
+  "ntp": true,
+  "timezone": "Africa/Addis_Ababa",
+  "locale_config": {
+    "kb_layout": "us",
+    "sys_enc": "UTF-8",
+    "sys_lang": "en_US.UTF-8"
+  },
+  "audio_config": { "audio": "pipewire" },
+  "network_config": { "type": "nm" },
+  "profile_config": {
+    "gfx_driver": "All open-source",
+    "greeter": "lightdm-slick-greeter",
+    "profile": {
+      "custom_settings": {},
+      "details": ["i3-wm"],
+      "main": "Desktop"
+    }
+  },
+  "packages": [
+    "git",
+    "base-devel",
+    "kitty",
+    "rofi",
+    "firefox",
+    "pavucontrol"
+  ],
+  "swap": true,
+  "parallel downloads": 5
+}

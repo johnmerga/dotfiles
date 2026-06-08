@@ -1,44 +1,37 @@
 #!/usr/bin/env bash
 set -euo pipefail
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG="$SCRIPT_DIR/03-devtools.log"
 exec > >(tee -a "$LOG") 2>&1
 echo "=== setup-03-devtools started at $(date) ==="
 
-###############################################################################
-# 1. Node via nvm (latest LTS)
-###############################################################################
-if ! command -v nvm &>/dev/null; then
+export NVM_DIR="$HOME/.nvm"
+if [[ ! -s "$NVM_DIR/nvm.sh" ]]; then
   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
-  # shellcheck disable=SC1090
-  source "$HOME/.nvm/nvm.sh"
 fi
+source "$NVM_DIR/nvm.sh"
 echo "Installing Node LTS..."
 nvm install --lts
 nvm use --lts
 node -v
 npm -v
 
-###############################################################################
-# 2. Protobuf compiler (protoc)
-###############################################################################
 PB_REL="https://github.com/protocolbuffers/protobuf/releases"
 VER="30.2"
-ARCH="linux-x86_64"
-ZIP="protoc-${VER}-${ARCH}.zip"
-curl -LO "$PB_REL/download/v${VER}/${ZIP}"
-unzip -q "$ZIP" -d "$HOME/.local"
-echo 'export PATH="$PATH:$HOME/.local/bin"' >>"$HOME/.bashrc"
-export PATH="$PATH:$HOME/.local/bin"
-rm "$ZIP"
-protoc --version
+ZIP="protoc-${VER}-linux-x86_64.zip"
+if ! command -v protoc >/dev/null; then
+  echo "Installing protoc ${VER}..."
+  tmp=$(mktemp -d)
+  curl -fsSL -o "$tmp/$ZIP" "$PB_REL/download/v${VER}/${ZIP}"
+  unzip -q "$tmp/$ZIP" -d "$HOME/.local"
+  rm -rf "$tmp"
+fi
+"$HOME/.local/bin/protoc" --version || echo "Ensure \$HOME/.local/bin is on PATH (it is set in your dotfiles)."
 
-###############################################################################
-# 3. Starship prompt
-###############################################################################
-if ! command -v starship &>/dev/null; then
+if ! command -v starship >/dev/null; then
+  echo "Installing starship..."
   curl -sS https://starship.rs/install.sh | sh -s -- --yes
-  echo "Starship installed. Add 'eval \"\$(starship init zsh)\"' to your .zshrc."
 fi
 
 echo "=== setup-03-devtools completed at $(date) ==="
