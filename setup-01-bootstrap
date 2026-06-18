@@ -18,6 +18,8 @@ ripgrep
 bat
 fd
 unzip
+neovim
+tree-sitter-cli
 lua
 luarocks
 xclip

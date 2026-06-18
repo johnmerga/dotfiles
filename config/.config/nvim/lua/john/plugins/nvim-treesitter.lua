@@ -1,6 +1,7 @@
 return {
   {
     "nvim-treesitter/nvim-treesitter",
+    branch = "main", -- the rewrite; the legacy API (master) is frozen
     event = { "BufReadPre", "BufNewFile" },
     build = ":TSUpdate",
     dependencies = {
@@ -8,53 +9,47 @@ return {
       "windwp/nvim-ts-autotag",
     },
     config = function()
-      -- import nvim-treesitter plugin
-      local treesitter = require("nvim-treesitter.configs")
+      local ts = require("nvim-treesitter")
 
-      -- configure treesitter
-      treesitter.setup({ -- enable syntax highlighting
-        highlight = {
-          enable = true,
-        },
-        -- enable indentation
-        indent = { enable = true },
-        -- enable autotagging (w/ nvim-ts-autotag plugin)
-        autotag = {
-          enable = true,
-        },
-        -- ensure these language parsers are installed
-        ensure_installed = {
-          "json",
-          "javascript",
-          "typescript",
-          "tsx",
-          "yaml",
-          "html",
-          "css",
-          "prisma",
-          "markdown",
-          "markdown_inline",
-          "svelte",
-          "graphql",
-          "bash",
-          "lua",
-          "vim",
-          "dockerfile",
-          "gitignore",
-          "query",
-          "python",
-        },
-        incremental_selection = {
-          enable = true,
-          keymaps = {
-            init_selection = "<C-space>",
-            node_incremental = "<C-space>",
-            scope_incremental = false,
-            node_decremental = "<bs>",
-          },
-        },
-        -- enable nvim-ts-context-commentstring plugin for commenting tsx and jsx
-        require("nvim-treesitter.configs").setup({}),
+      -- main branch no longer takes a big config table; setup() is optional
+      ts.setup()
+
+      -- parsers to keep installed (install() is async on first run)
+      ts.install({
+        "json",
+        "javascript",
+        "typescript",
+        "tsx",
+        "yaml",
+        "html",
+        "css",
+        "prisma",
+        "markdown",
+        "markdown_inline",
+        "svelte",
+        "graphql",
+        "bash",
+        "lua",
+        "vim",
+        "dockerfile",
+        "gitignore",
+        "query",
+        "python",
+      })
+
+      -- autotag moved to its own plugin setup (no longer a treesitter module)
+      require("nvim-ts-autotag").setup()
+
+      -- main branch: highlighting/indent are started per-buffer, not via a
+      -- module table. Start treesitter for any filetype that has a parser.
+      vim.api.nvim_create_autocmd("FileType", {
+        group = vim.api.nvim_create_augroup("john_treesitter", { clear = true }),
+        callback = function(args)
+          -- pcall: silently skip filetypes without an installed parser
+          if pcall(vim.treesitter.start, args.buf) then
+            vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+          end
+        end,
       })
     end,
   },
