@@ -27,10 +27,12 @@ is Layer 2.
 1. Boot the **official Arch ISO** and get online:
    - wired usually just works
    - wifi: `iwctl` → `station wlan0 connect <SSID>`
-2. Run the bootstrap:
+2. Download and run the bootstrap (download first — don't pipe `curl | bash`,
+   or archinstall's menu can't read the keyboard):
 
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/johnmerga/dotfiles/main/bootstrap.sh | bash
+   curl -fsSL https://raw.githubusercontent.com/johnmerga/dotfiles/main/bootstrap.sh -o bootstrap.sh
+   bash bootstrap.sh
    ```
 
    You will **pick the target disk** and **set passwords** interactively — these
