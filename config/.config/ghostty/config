@@ -1,5 +1,6 @@
 # ctrl+shift+,  -> reload configuration
-theme = tokyonight_night
+theme = TokyoNight Night
+
 
 background-opacity = 0.9
 

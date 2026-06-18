@@ -1,0 +1,296 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Acer Predator PH16-71 — NVIDIA RTX 4080 Mobile (Ada) + Intel iGPU hybrid setup.
+# The HDMI port on this laptop is wired to the NVIDIA dGPU, so the external
+# monitor only works once the NVIDIA driver is loaded with DRM modesetting.
+# This script fixes the classic "black screen on boot after installing nvidia-open"
+# caused by nouveau loading early and DRM KMS never being enabled.
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LOG="$SCRIPT_DIR/04-acer-nvidia.log"
+exec > >(tee -a "$LOG") 2>&1
+echo "=== setup-04-acer-nvidia started at $(date) ==="
+
+# --- sanity: this script is only meaningful on the NVIDIA hybrid laptop --------
+if ! lspci -d ::03xx 2>/dev/null | grep -qi nvidia; then
+  echo "ERROR: no NVIDIA GPU detected via lspci. This script targets the Acer Predator."
+  exit 1
+fi
+echo "NVIDIA GPU detected:"
+lspci -d ::03xx | grep -i nvidia | sed 's/^/  /'
+
+backup() {  # backup <file> — copies to <file>.bak.<timestamp> once per change
+  local f=$1
+  [[ -e $f ]] || return 0
+  local b="${f}.bak.$(date +%Y%m%d-%H%M%S)"
+  sudo cp -a "$f" "$b"
+  echo "  backed up $f -> $b"
+}
+
+# --- 1. packages --------------------------------------------------------------
+mapfile -t PACKAGES < <(cat <<'EOF'
+nvidia-open-dkms
+nvidia-utils
+nvidia-prime
+nvidia-settings
+linux-headers
+egl-wayland
+EOF
+)
+# NOTE: lib32-nvidia-utils (32-bit GL for Steam/Wine) is intentionally omitted —
+# it requires the [multilib] repo. Enable [multilib] in /etc/pacman.conf and add
+# it manually if you need it; it is not required for HDMI/display output.
+
+echo
+echo "The following packages will be installed:"
+idx=1
+for p in "${PACKAGES[@]}"; do printf "%2d) %s\n" "$idx" "$p"; ((idx++)); done
+
+read -rp "Enter comma-separated indexes to SKIP (blank = install all): " SKIP_INPUT
+IFS=',' read -ra SKIP <<<"$SKIP_INPUT"
+should_skip() { local n=$1; for s in "${SKIP[@]:-}"; do [[ ${s// /} == "$n" ]] && return 0; done; return 1; }
+
+echo "Installing selected packages..."
+# Don't let a single missing/unavailable package abort the whole run (set -e):
+# the driver may already be installed, and the config steps below are the part
+# that actually fixes the display. Warn and continue instead.
+if ! sudo pacman -Sy --needed --noconfirm \
+  $(for i in "${!PACKAGES[@]}"; do
+      idx=$((i+1))
+      should_skip "$idx" || printf "%s " "${PACKAGES[$i]}"
+    done); then
+  echo "WARN: pacman reported an error (e.g. a package not found). Continuing to"
+  echo "      configuration — verify the driver with 'pacman -Q nvidia-open-dkms'."
+fi
+
+# --- 2. mkinitcpio: early-load nvidia modules, drop the kms (nouveau) hook -----
+MKINIT=/etc/mkinitcpio.conf
+echo
+echo "Configuring $MKINIT ..."
+NEED_INITRAMFS=0
+
+if ! grep -qE '^MODULES=\(.*nvidia_drm' "$MKINIT"; then
+  backup "$MKINIT"
+  sudo sed -i -E 's/^MODULES=\(.*\)/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' "$MKINIT"
+  echo "  set MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)"
+  NEED_INITRAMFS=1
+else
+  echo "  MODULES already include nvidia_drm — leaving as-is"
+fi
+
+if grep -qE '^HOOKS=\(.*\bkms\b' "$MKINIT"; then
+  backup "$MKINIT"
+  # remove the standalone 'kms' hook (early nouveau modeset) — nvidia handles KMS now
+  sudo sed -i -E 's/^(HOOKS=\(.*) kms /\1 /; s/^(HOOKS=\(.*) kms\)/\1)/' "$MKINIT"
+  echo "  removed 'kms' hook from HOOKS"
+  NEED_INITRAMFS=1
+else
+  echo "  'kms' hook already absent"
+fi
+echo "  current: $(grep -E '^(MODULES|HOOKS)=' "$MKINIT")"
+
+# --- 3. modprobe.d: enable DRM KMS + fbdev, blacklist nouveau -----------------
+NVCONF=/etc/modprobe.d/nvidia.conf
+echo
+echo "Writing $NVCONF ..."
+EXPECTED_NV=$'# Managed by setup-04-acer-nvidia\noptions nvidia_drm modeset=1 fbdev=1\noptions nvidia NVreg_PreserveVideoMemoryAllocations=1\n'
+if [[ "$(cat "$NVCONF" 2>/dev/null)" != "$EXPECTED_NV" ]]; then
+  backup "$NVCONF"
+  printf '%s' "$EXPECTED_NV" | sudo tee "$NVCONF" >/dev/null
+  echo "  modeset=1, fbdev=1, PreserveVideoMemoryAllocations=1"
+  NEED_INITRAMFS=1
+else
+  echo "  already up to date"
+fi
+
+NOUVEAU=/etc/modprobe.d/blacklist-nouveau.conf
+EXPECTED_NB=$'# Managed by setup-04-acer-nvidia\nblacklist nouveau\noptions nouveau modeset=0\n'
+if [[ "$(cat "$NOUVEAU" 2>/dev/null)" != "$EXPECTED_NB" ]]; then
+  backup "$NOUVEAU"
+  printf '%s' "$EXPECTED_NB" | sudo tee "$NOUVEAU" >/dev/null
+  echo "  blacklisted nouveau"
+  NEED_INITRAMFS=1
+else
+  echo "  nouveau already blacklisted"
+fi
+
+# --- 4. NVIDIA power-management services (clean suspend/resume on a laptop) ----
+echo
+echo "Enabling NVIDIA suspend/resume services..."
+sudo systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service 2>/dev/null \
+  || echo "  WARN: could not enable one or more nvidia power services (check 'systemctl list-unit-files | grep nvidia')."
+
+# --- 5. regenerate initramfs --------------------------------------------------
+echo
+if [[ "$NEED_INITRAMFS" == 1 ]]; then
+  echo "Regenerating initramfs (mkinitcpio -P)..."
+  sudo mkinitcpio -P
+else
+  echo "No initramfs-affecting changes; skipping mkinitcpio."
+fi
+
+# Confirm the pacman hook that rebuilds initramfs on driver/kernel upgrades exists,
+# so a future 'pacman -Syu' doesn't leave a stale initramfs -> black screen.
+if ls /usr/share/libalpm/hooks/*nvidia* >/dev/null 2>&1; then
+  echo "OK: nvidia pacman hook present (initramfs auto-rebuilds on driver/kernel updates)."
+else
+  echo "WARN: no nvidia pacman hook found. After kernel/driver updates, run 'sudo mkinitcpio -P' manually."
+fi
+
+# --- 6. NVIDIA-primary PRIME (X11) -------------------------------------------
+# The HDMI port is wired to the NVIDIA dGPU. Making NVIDIA the primary X GPU
+# (instead of Intel-primary render-offload) drives the external monitor directly
+# off the GPU that owns it — this avoids the reverse-PRIME "Configure crtc failed"
+# bug, so the external display can be toggled on/off reliably at runtime.
+# The Intel-connected internal panel (eDP) is then attached as an output sink.
+echo
+echo "Configuring NVIDIA as the primary X GPU..."
+
+# Derive Xorg BusIDs (PCI:bus:dev:func, decimal) from lspci.
+busid() { # busid <vendor-grep>
+  local p; p=$(lspci -d ::03xx | grep -i "$1" | head -1 | awk '{print $1}'); p=${p#0000:}
+  local b d f; IFS=':.' read -r b d f <<<"$p"
+  printf 'PCI:%d:%d:%d' "$((10#$b))" "$((10#$d))" "$((10#$f))"
+}
+NV_BUSID=$(busid nvidia)
+INTEL_BUSID=$(busid intel)
+echo "  NVIDIA BusID=$NV_BUSID  Intel BusID=$INTEL_BUSID"
+
+XORGCONF=/etc/X11/xorg.conf.d/10-nvidia-primary.conf
+sudo mkdir -p /etc/X11/xorg.conf.d
+backup "$XORGCONF"
+sudo tee "$XORGCONF" >/dev/null <<EOF
+# Managed by setup-04-acer-nvidia — NVIDIA as the primary X GPU.
+Section "ServerLayout"
+    Identifier "layout"
+    Screen 0 "nvidia"
+    Inactive "intel"
+EndSection
+
+Section "Device"
+    Identifier "nvidia"
+    Driver "nvidia"
+    BusID "$NV_BUSID"
+EndSection
+
+Section "Screen"
+    Identifier "nvidia"
+    Device "nvidia"
+    Option "AllowEmptyInitialConfiguration"
+EndSection
+
+Section "Device"
+    Identifier "intel"
+    Driver "modesetting"
+    BusID "$INTEL_BUSID"
+EndSection
+
+Section "Screen"
+    Identifier "intel"
+    Device "intel"
+EndSection
+EOF
+echo "  wrote $XORGCONF"
+
+# Attach the Intel-connected internal panel (eDP) as a sink for the NVIDIA screen,
+# before the greeter, so the laptop display lights up at login.
+SETUP=/etc/lightdm/display-setup.sh
+sudo tee "$SETUP" >/dev/null <<'EOF'
+#!/bin/sh
+# Make the Intel-connected outputs (internal eDP panel) available to the
+# NVIDIA-primary X screen.
+xrandr --setprovideroutputsource modesetting NVIDIA-0 2>/dev/null || true
+xrandr --auto 2>/dev/null || true
+EOF
+sudo chmod +x "$SETUP"
+sudo mkdir -p /etc/lightdm/lightdm.conf.d
+sudo tee /etc/lightdm/lightdm.conf.d/50-nvidia-prime.conf >/dev/null <<EOF
+[Seat:*]
+display-setup-script=$SETUP
+EOF
+echo "  wired display-setup-script into lightdm"
+
+# HDMI arrange helper for the i3 session.
+HELPER="$HOME/.local/bin/predator-hdmi"
+mkdir -p "$(dirname "$HELPER")"
+cat > "$HELPER" <<'EOF'
+#!/usr/bin/env bash
+# Arrange the external monitor on the HDMI port (NVIDIA dGPU) under i3/X11.
+#
+#   predator-hdmi [on|off]      (default: on)
+#
+# DPI matching: the laptop panel is HiDPI (~188 DPI) and external monitors are
+# usually ~109 DPI, so a window changes physical size when dragged across.
+# The external output is scaled so its *effective* DPI matches the laptop.
+# Set PREDATOR_HDMI_MATCH=0 to use the monitor's native DPI instead.
+#
+# NOTE: This laptop's eDP panel is on the Intel GPU and HDMI is on the NVIDIA
+# GPU, so dual-display always goes through a PRIME sink. This driver cannot
+# re-bind a CRTC after a software `xrandr --off` mid-session, so `off` is a
+# one-way trip until the next login — for laptop-only, unplug the cable instead.
+set -e
+ACTION="${1:-on}"
+
+# Internal laptop panel is always the connected eDP* output (its name may be
+# provider-prefixed, e.g. eDP-1-2, under NVIDIA-primary PRIME).
+PRIMARY=$(xrandr -q | awk '$1 ~ /eDP/ && / connected/{print $1; exit}')
+# External = first connected output that is NOT the internal panel (HDMI/DP).
+EXT=$(xrandr -q | awk '/ connected/ && $1 !~ /eDP/ {print $1; exit}')
+
+dpi_of() {
+  xrandr --listmonitors | awk -v o="$1" '
+    $NF==o { for(i=1;i<=NF;i++) if($i ~ /\//){
+              split($i,a,"x"); split(a[1],w,"/");
+              if(w[2]>0) printf "%.1f", w[1]/(w[2]/25.4); exit } }'
+}
+
+primary_width() {
+  xrandr -q | awk -v o="$PRIMARY" '$1==o{
+    match($0,/[0-9]+x[0-9]+\+/); split(substr($0,RSTART,RLENGTH-1),r,"x"); print r[1]; exit }'
+}
+
+turn_off() { [ -n "$EXT" ] && xrandr --output "$EXT" --off || true; }
+
+turn_on() {
+  # Bring the internal panel up first (primary, top-left) so its width is known.
+  xrandr --output "$PRIMARY" --auto --primary --pos 0x0
+  [ -n "$EXT" ] || return 0
+  xrandr --output "$EXT" --auto          # native first, to read DPI
+  local scale="1"
+  if [ "${PREDATOR_HDMI_MATCH:-1}" = 1 ]; then
+    local pd ed; pd=$(dpi_of "$PRIMARY"); ed=$(dpi_of "$EXT")
+    [ -n "$pd" ] && [ -n "$ed" ] && \
+      scale=$(awk -v p="$pd" -v e="$ed" 'BEGIN{s=p/e; if(s<1.03&&s>0.97)s=1; printf "%.4f", s}')
+  fi
+  local pw; pw=$(primary_width)
+  xrandr --output "$EXT" --scale "${scale}x${scale}" --pos "${pw}x0" \
+    || { sleep 1; xrandr --output "$EXT" --scale "${scale}x${scale}" --pos "${pw}x0"; }
+}
+
+case "$ACTION" in
+  off)   turn_off ;;
+  on|*)  turn_on ;;
+esac
+EOF
+chmod +x "$HELPER"
+echo "  wrote HDMI helper: $HELPER"
+echo "  i3: 'exec_always --no-startup-id predator-hdmi' + 'bindsym \$mod+p exec predator-hdmi on'"
+
+echo
+echo "=== setup-04-acer-nvidia completed at $(date) ==="
+echo
+echo "NEXT STEPS:"
+echo "  1. Restart the display manager (or reboot):  sudo systemctl restart lightdm"
+echo "  2. After login, verify NVIDIA is the primary GPU:"
+echo "       xrandr --listproviders   # expect 'NVIDIA-0' as a Source Output provider"
+echo "       lspci -k -d ::03xx | grep -A1 NVIDIA   # 'Kernel driver in use: nvidia'"
+echo "  3. Plug in HDMI; it should appear automatically. Toggle with \$mod+p."
+echo
+echo "RECOVERY if the screen is black after restart:"
+echo "  - Switch to a TTY (Ctrl+Alt+F3), log in, and remove the Xorg config:"
+echo "       sudo rm /etc/X11/xorg.conf.d/10-nvidia-primary.conf"
+echo "       sudo systemctl restart lightdm"
+echo "    (this reverts to Intel-primary render-offload). Then re-check: $LOG"
+echo "  - If boot itself is black, at the GRUB menu press 'e' and append"
+echo "    'nvidia_drm.modeset=0' to the linux line to get in."
