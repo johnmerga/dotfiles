@@ -1,14 +1,12 @@
 return {
-  "williamboman/mason.nvim",
+  "mason-org/mason.nvim",
   dependencies = {
-    "williamboman/mason-lspconfig.nvim",
+    "mason-org/mason-lspconfig.nvim",
     "WhoIsSethDaniel/mason-tool-installer.nvim",
   },
   config = function()
-    -- import mason
     local mason = require("mason")
 
-    -- import mason-lspconfig
     local mason_lspconfig = require("mason-lspconfig")
 
     local mason_tool_installer = require("mason-tool-installer")
@@ -25,9 +23,9 @@ return {
     })
 
     mason_lspconfig.setup({
-      -- list of servers for mason to install
+      -- list of servers for mason to install (and auto-enable via vim.lsp.enable)
       ensure_installed = {
-        "tsserver",
+        "ts_ls", -- was tsserver
         "html",
         "cssls",
         "tailwindcss",
@@ -37,11 +35,12 @@ return {
         "emmet_ls",
         "prismals",
         "pyright",
-        "ruff_lsp",
+        "ruff", -- was ruff_lsp
         "gopls",
+        "intelephense", -- php (was configured but never auto-installed before)
       },
-      -- auto-install configured servers (with lspconfig)
-      automatic_installation = true, -- not the same as ensure_installed
+      -- automatic_enable defaults to true in v2: installed servers are
+      -- enabled with vim.lsp.enable() automatically.
     })
 
     mason_tool_installer.setup({
