@@ -14,7 +14,10 @@ _Avoid_: bootstrap, initial setup.
 
 **Post-install** (Layer 2):
 Everything run after first reboot by the `setup-0x` scripts: CLI/dev tools, AUR
-apps, dotfiles, and *enablements*. Re-runnable on an existing machine.
+apps, dotfiles, and *enablements*. Re-runnable on an existing machine. Scripts
+split by concern, not by install order: `01` CLI/dev, `02` desktop, `03` language
+toolchains, `04` network (hotspot + VPN). A package belongs to the script whose
+*enablements* it shares.
 _Avoid_: bootstrap (overloaded), arch-setup (the deleted legacy scripts).
 
 **Graphical base**:
@@ -33,9 +36,11 @@ _Avoid_: settings, config (ambiguous on their own).
 
 **Enablement**:
 A machine-level state change beyond installing a package: setting zsh as the
-default shell, enabling the docker service and group, enabling bluetooth,
-confirming audio services are active. Distinct from installing the package that
-makes the change possible.
+default shell, enabling the docker service and group, adding the user to `video`
+for brightness control, enabling bluetooth and NetworkManager, confirming audio
+services are active. Distinct from installing the package that makes the change
+possible. Note the inverse also counts as a decision: `hostapd` and `dnsmasq` are
+installed but deliberately *left disabled*, because linux-wifi-hotspot drives them.
 _Avoid_: configuration, setup.
 
 **Dotfiles**:

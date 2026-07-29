@@ -80,21 +80,21 @@ zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 alias kp="ps aux | fzf | awk '{print \$2}' | xargs kill -9"
 export PATH=$HOME/bin:$PATH
 export VSCODE_FORWARD=http://localhost:3000
-# pyenv
+# pyenv — guarded so a machine without pyenv installed doesn't error on startup
 export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
-
-# source ~/.local/share/powerlevel10k/powerlevel10k.zsh-theme
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+command -v pyenv >/dev/null && eval "$(pyenv init -)"
 
 # eval "$(ssh-agent -s)"
 # ssh-add ~/.ssh/github
-source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
-source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
-source ~/powerlevel10k/powerlevel10k.zsh-theme
-#
-export PATH=/usr/local/bin/:$PATH
+
+# Powerlevel10k — from the zsh-theme-powerlevel10k-git package (setup-02).
+P10K_THEME=/usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
+[[ -r $P10K_THEME ]] && source "$P10K_THEME"
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-complete -C '/usr/local/bin//aws_completer
-' aws
-autoload bashcompinit && bashcompinit
+
+export PATH=/usr/local/bin/:$PATH
+
+# AWS CLI completion (bashcompinit must load before `complete` is used)
+autoload -Uz bashcompinit && bashcompinit
+[[ -x /usr/local/bin/aws_completer ]] && complete -C '/usr/local/bin/aws_completer' aws

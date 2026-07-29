@@ -1,5 +1,6 @@
 # ctrl+shift+,  -> reload configuration
-theme = tokyonight_night
+# Name must match a file in /usr/share/ghostty/themes (`ghostty +list-themes`).
+theme = TokyoNight Night
 
 background-opacity = 0.9
 
@@ -24,7 +25,8 @@ font-size = 10
 # theme = tokyonight_night
 # clipboard-read = allow
 # clipboard-paste-protection = false
-# only for ubuntr
+# only for ubuntu
+# NOTE: this later key wins over `window-decoration = false` above.
 window-decoration = true
 # shell-integration = zsh
 #

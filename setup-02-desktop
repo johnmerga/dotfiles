@@ -11,6 +11,9 @@ obsidian
 flameshot
 thunar
 gwenview
+feh
+udiskie
+brightnessctl
 bluez
 bluez-utils
 blueman
@@ -19,6 +22,8 @@ EOF
 
 mapfile -t AUR_PACKAGES < <(cat <<'EOF'
 zsh-theme-powerlevel10k-git
+brave-bin
+monitask
 EOF
 )
 
@@ -31,11 +36,16 @@ read -rp "Enter comma-separated indexes to SKIP: " SKIP_INPUT
 IFS=',' read -ra SKIP <<<"$SKIP_INPUT"
 should_skip() { local n=$1; for s in "${SKIP[@]}"; do [[ ${s// /} == "$n" ]] && return 0; done; return 1; }
 
-sudo pacman -S --needed --noconfirm \
-  $(for i in "${!PACKAGES[@]}"; do
-      idx=$((i+1))
-      should_skip "$idx" || printf "%s " "${PACKAGES[$i]}"
-    done)
+SELECTED=()
+for i in "${!PACKAGES[@]}"; do
+  should_skip "$((i+1))" || SELECTED+=("${PACKAGES[$i]}")
+done
+
+if ((${#SELECTED[@]})); then
+  sudo pacman -S --needed --noconfirm "${SELECTED[@]}"
+else
+  echo "All repo packages skipped."
+fi
 
 for i in "${!AUR_PACKAGES[@]}"; do
   idx=$(( ${#PACKAGES[@]} + i + 1 ))
@@ -46,6 +56,19 @@ done
 if command -v bluetoothctl >/dev/null; then
   echo "Enabling bluetooth service..."
   sudo systemctl enable --now bluetooth.service || true
+fi
+
+if command -v brightnessctl >/dev/null; then
+  echo "Adding $USER to the video group (brightnessctl without sudo)..."
+  sudo usermod -aG video "$USER" || true
+  echo "  Log out and back in for video group membership to take effect."
+fi
+
+# The stowed i3 config sets the wallpaper from here with feh; an empty dir is a
+# silent no-op, so make sure the path exists.
+mkdir -p "$HOME/Pictures/background"
+if [[ -z "$(ls -A "$HOME/Pictures/background" 2>/dev/null)" ]]; then
+  echo "NOTE: ~/Pictures/background is empty — drop wallpapers there for i3/feh."
 fi
 
 echo "Verifying audio stack..."

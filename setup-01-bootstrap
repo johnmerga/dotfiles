@@ -9,6 +9,9 @@ echo "=== setup-01-bootstrap started at $(date) ==="
 mapfile -t PACKAGES < <(cat <<'EOF'
 git
 base-devel
+openssh
+man-db
+man-pages
 ghostty
 tmux
 zsh
@@ -29,6 +32,8 @@ wget
 rsync
 docker
 docker-compose
+lazydocker
+pyenv
 EOF
 )
 
@@ -36,6 +41,8 @@ mapfile -t AUR_PACKAGES < <(cat <<'EOF'
 yay
 slack-desktop
 telegram-desktop
+visual-studio-code-bin
+postman-bin
 EOF
 )
 
@@ -50,12 +57,17 @@ IFS=',' read -ra SKIP <<<"$SKIP_INPUT"
 should_skip() { local n=$1; for s in "${SKIP[@]}"; do [[ ${s// /} == "$n" ]] && return 0; done; return 1; }
 
 echo
-echo "Installing selected packages..."
-sudo pacman -Sy --needed --noconfirm \
-  $(for i in "${!PACKAGES[@]}"; do
-      idx=$((i+1))
-      should_skip "$idx" || printf "%s " "${PACKAGES[$i]}"
-    done)
+SELECTED=()
+for i in "${!PACKAGES[@]}"; do
+  should_skip "$((i+1))" || SELECTED+=("${PACKAGES[$i]}")
+done
+
+if ((${#SELECTED[@]})); then
+  echo "Installing selected packages..."
+  sudo pacman -Sy --needed --noconfirm "${SELECTED[@]}"
+else
+  echo "All repo packages skipped."
+fi
 
 for i in "${!AUR_PACKAGES[@]}"; do
   idx=$(( ${#PACKAGES[@]} + i + 1 ))

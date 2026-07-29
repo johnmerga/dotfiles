@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LOG="$SCRIPT_DIR/04-network.log"
+exec > >(tee -a "$LOG") 2>&1
+echo "=== setup-04-network started at $(date) ==="
+
+# Wifi hotspot + VPN. Split out from setup-02 because these carry their own
+# enablements (NetworkManager) and are per-machine optional.
+mapfile -t PACKAGES < <(cat <<'EOF'
+networkmanager
+wireless_tools
+iptables
+dnsmasq
+hostapd
+wireguard-tools
+proton-vpn-gtk-app
+EOF
+)
+
+mapfile -t AUR_PACKAGES < <(cat <<'EOF'
+linux-wifi-hotspot
+EOF
+)
+
+echo
+idx=1
+for p in "${PACKAGES[@]}"; do printf "%2d) %s\n" "$idx" "$p"; ((idx++)); done
+for p in "${AUR_PACKAGES[@]}"; do printf "%2d) %s (AUR)\n" "$idx" "$p"; ((idx++)); done
+
+read -rp "Enter comma-separated indexes to SKIP: " SKIP_INPUT
+IFS=',' read -ra SKIP <<<"$SKIP_INPUT"
+should_skip() { local n=$1; for s in "${SKIP[@]}"; do [[ ${s// /} == "$n" ]] && return 0; done; return 1; }
+
+SELECTED=()
+for i in "${!PACKAGES[@]}"; do
+  should_skip "$((i+1))" || SELECTED+=("${PACKAGES[$i]}")
+done
+
+if ((${#SELECTED[@]})); then
+  sudo pacman -S --needed --noconfirm "${SELECTED[@]}"
+else
+  echo "All repo packages skipped."
+fi
+
+for i in "${!AUR_PACKAGES[@]}"; do
+  idx=$(( ${#PACKAGES[@]} + i + 1 ))
+  should_skip "$idx" && continue
+  yay -S --needed --noconfirm "${AUR_PACKAGES[$i]}"
+done
+
+if command -v nmcli >/dev/null; then
+  echo "Enabling NetworkManager..."
+  sudo systemctl enable --now NetworkManager.service || true
+fi
+
+# hostapd and dnsmasq are deliberately NOT enabled: linux-wifi-hotspot (wihotspot)
+# starts and configures them on demand. Enabling them standalone fights with it.
+if command -v wihotspot >/dev/null; then
+  echo "linux-wifi-hotspot installed — launch the GUI with 'wihotspot' (CLI: 'create_ap')."
+  echo "  Leaving hostapd/dnsmasq disabled; wihotspot manages them on demand."
+fi
+
+if command -v wg >/dev/null; then
+  echo "WireGuard tools installed."
+  echo "  Drop your tunnel config at /etc/wireguard/wg-t1.conf (chmod 600),"
+  echo "  then toggle it with the 'wg' script from ~/dotfiles/bin (mod+Shift+w in i3)."
+fi
+
+if pacman -Qq proton-vpn-gtk-app >/dev/null 2>&1; then
+  echo "ProtonVPN installed — launch it from rofi as 'Proton VPN'."
+fi
+
+echo "=== setup-04-network completed at $(date) ==="

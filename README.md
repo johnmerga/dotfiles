@@ -13,9 +13,9 @@ for why it's built this way.
   the official Arch ISO. Partitions, bootloader, kernel, network, locale, audio,
   and the graphical base. Ends at first reboot into a working i3 desktop with
   sound and wifi.
-- **Layer 2 — post-install** (`setup-01/02/03`): run after first reboot. CLI/dev
+- **Layer 2 — post-install** (`setup-01/02/03/04`): run after first reboot. CLI/dev
   tools, AUR apps, dotfiles, and machine enablements (default shell, docker,
-  bluetooth, audio check). Safe to re-run on an existing machine.
+  bluetooth, audio check, NetworkManager). Safe to re-run on an existing machine.
 
 The dividing line: "can I see a screen and hear sound" is Layer 1; "can I work"
 is Layer 2.
@@ -43,13 +43,34 @@ is Layer 2.
 5. Run the post-install layer:
 
    ```bash
-   ~/dotfiles/setup-01-bootstrap   # CLI/dev tools, AUR, dotfiles, zsh + docker
-   ~/dotfiles/setup-02-desktop     # desktop apps, bluetooth, audio check
+   ~/dotfiles/setup-01-bootstrap   # CLI/dev tools, editors, AUR, dotfiles, zsh + docker
+   ~/dotfiles/setup-02-desktop     # desktop apps, brightness, automount, bluetooth, audio
    ~/dotfiles/setup-03-devtools    # node (nvm), protoc, starship
+   ~/dotfiles/setup-04-network     # wifi hotspot, WireGuard, ProtonVPN
    ```
 
-   `setup-01` and `setup-02` let you type comma-separated indexes to skip
-   packages per machine.
+   `setup-01`, `setup-02` and `setup-04` let you type comma-separated indexes to
+   skip packages per machine.
+
+### What lands where
+
+| Script | Notable contents |
+| --- | --- |
+| `setup-01` | neovim, ghostty, tmux, zsh, fzf/ripgrep/bat/fd, lazygit, lazydocker, docker, openssh, man-db/man-pages, pyenv, VS Code, Postman, Slack, Telegram |
+| `setup-02` | obsidian, brave, thunar, flameshot, gwenview, feh, udiskie, brightnessctl, monitask, bluetooth, powerlevel10k |
+| `setup-03` | node via nvm, protoc, starship |
+| `setup-04` | networkmanager, wireless_tools, iptables, dnsmasq, hostapd, linux-wifi-hotspot, wireguard-tools, proton-vpn-gtk-app |
+
+### Post-install manual steps
+
+A few things can't be scripted from a public repo:
+
+- **WireGuard**: drop your tunnel at `/etc/wireguard/wg-t1.conf` (`chmod 600`),
+  then toggle with `~/bin/wg` or `$mod+Shift+w`.
+- **ProtonVPN**: sign in through the GUI once.
+- **Wallpapers**: put images in `~/Pictures/background/` (i3 sets them with feh).
+- **Brightness/docker groups**: log out and back in so `video` and `docker`
+  group membership takes effect.
 
 > **Note:** archinstall's config schema changes between releases. Before
 > committing to a disk, sanity-check that the menu pre-fills correctly (or use
