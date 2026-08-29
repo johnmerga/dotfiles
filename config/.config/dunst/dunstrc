@@ -1,0 +1,54 @@
+# dunst — notification daemon, stow-managed (dotfiles/config/.config/dunst/dunstrc).
+#
+# Required for battery-monitor to be visible: without a notification daemon
+# on the session bus, notify-send fails with ServiceUnknown.
+
+[global]
+    monitor = 0
+    follow = mouse
+
+    width = 400
+    height = (0, 200)
+    origin = top-right
+    offset = (16, 16)
+    scale = 0
+
+    notification_limit = 5
+    progress_bar = true
+
+    padding = 12
+    horizontal_padding = 14
+    frame_width = 2
+    corner_radius = 6
+    separator_color = frame
+
+    font = System San Francisco Display 11
+    markup = full
+    format = "<b>%s</b>\n%b"
+    word_wrap = yes
+    icon_position = left
+    enable_icons = yes
+    icon_theme = "Papirus, Adwaita"
+
+    mouse_left_click = do_action, close_current
+    mouse_middle_click = close_all
+    mouse_right_click = close_current
+
+[urgency_low]
+    background = "#2f343f"
+    foreground = "#88c0d0"
+    frame_color = "#4c566a"
+    timeout = 5
+
+[urgency_normal]
+    background = "#2f343f"
+    foreground = "#f3f4f5"
+    frame_color = "#ebcb8b"
+    timeout = 10
+
+# Critical battery warnings must not disappear on their own.
+[urgency_critical]
+    background = "#3b2226"
+    foreground = "#f3f4f5"
+    frame_color = "#bf616a"
+    timeout = 0

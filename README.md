@@ -83,3 +83,76 @@ Start tmux and press your prefix (`Alt + a`) then `I` (capital i) to install plu
 - If you already have conflicting files, remove them before stowing, or let
   `setup-01-bootstrap` run `stow --adopt`.
 - Each top-level folder is a stow package.
+
+---
+
+## Status bar & power warnings
+
+The i3 bar sits at the **bottom** of every output and reads
+`~/.config/i3status/config` from this repo, **not** the system-wide
+`/etc/i3status.conf`. Left to right it shows wifi, ethernet, volume, RAM, CPU
+load, CPU package temperature, free disk, battery (state + percentage + time
+remaining) and the date/clock.
+
+Styling is a Nord palette with per-icon colours, which works because
+`general { markup = pango }` is set — that is what allows a `<span>` inside each
+module's format string.
+
+Icons are Nerd Font glyphs taken from the **Font Awesome 4 range**
+(`U+F000`–`U+F2E0`); that range has been stable across Nerd Fonts releases,
+unlike the newer Material and Devicon blocks. They need
+`ttf-nerd-fonts-symbols`, installed by `setup-03-devtools` — without it every
+icon renders as an empty box. The bar declares a fallback chain
+(`JetBrainsMono Nerd Font, Symbols Nerd Font, DejaVu Sans`) so the text stays
+readable regardless.
+
+Battery details:
+
+- `battery all` aggregates every `/sys/class/power_supply/BAT*` device, so it
+  works whether the firmware names the pack `BAT0` or `BAT1` (the Predator
+  PH16-71 reports `BAT1`).
+- `last_full_capacity = true` measures charge against what the pack currently
+  charges to rather than its factory design capacity, so a worn battery still
+  reads 100% when it is actually full.
+- Below 20% the reading turns red, matching the first notification threshold.
+
+CPU temperature deliberately sets **no** `path`. i3status defaults to globbing
+`/sys/devices/platform/coretemp.0/hwmon/hwmon*/temp1_input`, which survives the
+`hwmon` renumbering that happens across reboots — a hardcoded `hwmon7` would
+eventually point at the wrong sensor.
+
+`bin/bin/battery-monitor` runs from the i3 config and sends desktop
+notifications on AC plug/unplug, at 20% (low) and at 10% (critical, which does
+not auto-dismiss). Each threshold fires once per discharge cycle and re-arms
+when you plug in. Thresholds are env-overridable:
+
+```bash
+BATTERY_LOW=25 BATTERY_CRITICAL=8 BATTERY_INTERVAL=60 battery-monitor
+```
+
+Notifications need a running notification daemon — `dunst`, configured at
+`config/.config/dunst/dunstrc` and installed by `setup-02-desktop`. Without it
+`notify-send` fails outright, so `battery-monitor` falls back to `i3-nagbar` for
+critical warnings only.
+
+### Slow links and stale sync dbs
+
+Two failure modes bit this machine and are worth recognising:
+
+- **`pacman -S` after a long gap 404s on every mirror.** A sync db that is weeks
+  old names package versions the mirrors have already dropped. The wall of
+  `failed retrieving file ... 404` is not a mirror problem. Always `-Syu`, never
+  a bare `-S`, which is what the `setup-0x` scripts now do.
+- **`Operation too slow. Less than 1 bytes/sec` aborts tiny transfers.** On a
+  throttled link (e.g. routed through a free VPN) pacman's download timeout
+  kills stalled `.sig` fetches. The scripts pass
+  `--disable-download-timeout` to avoid this.
+
+Icons only need `ttf-nerd-fonts-symbols` (1.2 MiB), *not* the 11 MiB patched
+JetBrains Mono — the bar's fallback chain lets DejaVu render the text while the
+symbol font supplies the glyphs. Useful when bandwidth is scarce.
+
+> **Gotcha:** i3 inherits a bare `PATH` from the display manager — no `~/bin`,
+> no `~/.local/bin`. Scripts shipped by these dotfiles must be referenced from
+> the i3 config by absolute path (`$HOME/bin/...`), or the `exec` silently does
+> nothing.

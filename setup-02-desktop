@@ -14,6 +14,10 @@ gwenview
 bluez
 bluez-utils
 blueman
+dunst
+libnotify
+acpi
+papirus-icon-theme
 EOF
 )
 
@@ -31,7 +35,10 @@ read -rp "Enter comma-separated indexes to SKIP: " SKIP_INPUT
 IFS=',' read -ra SKIP <<<"$SKIP_INPUT"
 should_skip() { local n=$1; for s in "${SKIP[@]}"; do [[ ${s// /} == "$n" ]] && return 0; done; return 1; }
 
-sudo pacman -S --needed --noconfirm \
+# -Syu, not -S: a stale sync db makes pacman request versions the mirrors have
+# already dropped, which fails with a wall of 404s. --disable-download-timeout
+# keeps small transfers (notably .sig files) alive on a slow or metered link.
+sudo pacman -Syu --needed --noconfirm --disable-download-timeout \
   $(for i in "${!PACKAGES[@]}"; do
       idx=$((i+1))
       should_skip "$idx" || printf "%s " "${PACKAGES[$i]}"
@@ -40,7 +47,7 @@ sudo pacman -S --needed --noconfirm \
 for i in "${!AUR_PACKAGES[@]}"; do
   idx=$(( ${#PACKAGES[@]} + i + 1 ))
   should_skip "$idx" && continue
-  yay -S --needed --noconfirm "${AUR_PACKAGES[$i]}"
+  yay -S --needed --noconfirm --disable-download-timeout "${AUR_PACKAGES[$i]}"
 done
 
 if command -v bluetoothctl >/dev/null; then
