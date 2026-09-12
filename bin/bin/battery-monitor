@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+# battery-monitor — desktop warnings for low battery and AC plug/unplug.
+#
+# Started from the i3 config. Polls sysfs (no acpid/upower dependency) and
+# fires a notification on:
+#   * AC adapter connected / disconnected
+#   * battery falling to $LOW while discharging      (normal urgency)
+#   * battery falling to $CRITICAL while discharging (critical, never expires)
+#
+# Each threshold fires once per discharge cycle and re-arms when you plug in,
+# so a battery hovering at 19% doesn't spam you every poll.
+#
+# Needs a notification daemon (dunst) to be visible; falls back to i3-nagbar
+# if the D-Bus notification service is unavailable.
+
+set -uo pipefail
+
+LOW=${BATTERY_LOW:-20}
+CRITICAL=${BATTERY_CRITICAL:-10}
+INTERVAL=${BATTERY_INTERVAL:-30}
+
+SYSFS=/sys/class/power_supply
+
+# Single instance: i3's exec_always re-runs this on every config reload, and
+# the lock makes the duplicate exit instead of doubling every warning.
+exec 9>"${XDG_RUNTIME_DIR:-/tmp}/battery-monitor.lock"
+flock -n 9 || exit 0
+
+# Echo the aggregate battery percentage, or nothing if there is no battery.
+battery_percent() {
+  local now=0 full=0 dir n f
+  for dir in "$SYSFS"/*; do
+    [[ $(cat "$dir/type" 2>/dev/null) == Battery ]] || continue
+    # Prefer charge_* / energy_* counters so multiple packs sum correctly;
+    # fall back to the firmware's own capacity percentage.
+    n=$(cat "$dir/charge_now" 2>/dev/null || cat "$dir/energy_now" 2>/dev/null || echo "")
+    f=$(cat "$dir/charge_full" 2>/dev/null || cat "$dir/energy_full" 2>/dev/null || echo "")
+    if [[ -n $n && -n $f && $f -gt 0 ]]; then
+      now=$((now + n))
+      full=$((full + f))
+    elif [[ -r $dir/capacity ]]; then
+      echo "$(cat "$dir/capacity")"
+      return
+    fi
+  done
+  [[ $full -gt 0 ]] && echo $((now * 100 / full))
+}
+
+# Echo 1 if any Mains supply is online, else 0.
+ac_online() {
+  local dir
+  for dir in "$SYSFS"/*; do
+    [[ $(cat "$dir/type" 2>/dev/null) == Mains ]] || continue
+    [[ $(cat "$dir/online" 2>/dev/null) == 1 ]] && { echo 1; return; }
+  done
+  echo 0
+}
+
+# notify <urgency> <icon> <summary> <body>
+# The stack tag lets dunst replace the previous battery popup rather than
+# stacking a column of them.
+notify() {
+  local urgency=$1 icon=$2 summary=$3 body=$4
+  notify-send \
+    --app-name=battery \
+    --urgency="$urgency" \
+    --icon="$icon" \
+    --hint=string:x-dunst-stack-tag:battery \
+    "$summary" "$body" 2>/dev/null && return 0
+
+  # No notification daemon — fall back to i3's own nagbar so the warning is
+  # never silently swallowed. Both low and critical fall back, because a machine
+  # without dunst would otherwise get no low-battery warning at all; `low`
+  # urgency (AC plug/unplug chatter) is not worth a nagbar and is dropped.
+  case $urgency in
+    critical) nag=error ;;
+    normal)   nag=warning ;;
+    *)        return 0 ;;
+  esac
+  if command -v i3-nagbar >/dev/null; then
+    i3-nagbar -t "$nag" -m "$summary — $body" >/dev/null 2>&1 &
+  fi
+}
+
+# Exit promptly when i3 or the session kills us. Without the trap, bash defers
+# signal handling until the foreground `sleep` returns, so a terminated daemon
+# would keep holding the lock for up to $INTERVAL seconds and the replacement
+# instance started by an i3 restart would immediately exit as a duplicate.
+trap 'kill "${sleep_pid:-0}" 2>/dev/null; exit 0' TERM INT HUP
+
+prev_ac=$(ac_online)
+warned_low=0
+warned_critical=0
+
+while :; do
+  pct=$(battery_percent)
+  ac=$(ac_online)
+
+  if [[ -n $pct ]]; then
+    if [[ $ac != "$prev_ac" ]]; then
+      if [[ $ac == 1 ]]; then
+        notify low battery-good "Charging" "AC connected — ${pct}%"
+      else
+        notify normal battery "On battery" "AC disconnected — ${pct}%"
+      fi
+    fi
+
+    if [[ $ac == 1 ]]; then
+      # Plugged in: re-arm both warnings for the next discharge cycle.
+      warned_low=0
+      warned_critical=0
+    else
+      if [[ $pct -le $CRITICAL && $warned_critical -eq 0 ]]; then
+        notify critical battery-caution \
+          "Battery critical: ${pct}%" "Plug in now — the machine will die soon."
+        warned_critical=1
+        warned_low=1
+      elif [[ $pct -le $LOW && $warned_low -eq 0 ]]; then
+        notify normal battery-low "Battery low: ${pct}%" "Time to find a charger."
+        warned_low=1
+      fi
+    fi
+  fi
+
+  prev_ac=$ac
+
+  # Backgrounded so the trap above can interrupt the wait immediately.
+  #
+  # 9>&- closes the lock FD in the child: a backgrounded sleep would otherwise
+  # inherit it and keep holding the flock for the rest of the interval after
+  # this script exits, making the next instance (started by an i3 restart) exit
+  # as a false duplicate.
+  sleep "$INTERVAL" 9>&- &
+  sleep_pid=$!
+  wait "$sleep_pid"
+done

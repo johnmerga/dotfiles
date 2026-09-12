@@ -98,3 +98,7 @@ export PATH=/usr/local/bin/:$PATH
 complete -C '/usr/local/bin//aws_completer
 ' aws
 autoload bashcompinit && bashcompinit
+
+
+# Added by Antigravity CLI installer
+export PATH="/home/john/.local/bin:$PATH"

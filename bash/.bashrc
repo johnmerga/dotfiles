@@ -156,3 +156,7 @@ export TERM=xterm-256color
 PATH=$HOME/bin:$PATH
 
 eval "$(starship init bash)"
+
+
+# Added by Antigravity CLI installer
+export PATH="/home/john/.local/bin:$PATH"

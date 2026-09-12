@@ -34,4 +34,20 @@ if ! command -v starship >/dev/null; then
   curl -sS https://starship.rs/install.sh | sh -s -- --yes
 fi
 
+# Nerd Fonts: the patched JetBrains Mono for the terminal/editor, plus the
+# standalone symbol font so the icons in the i3 bar (~/.config/i3status/config)
+# resolve via fontconfig fallback even in apps using a different family.
+FONTS=(ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols)
+MISSING_FONTS=()
+for f in "${FONTS[@]}"; do
+  pacman -Qq "$f" >/dev/null 2>&1 || MISSING_FONTS+=("$f")
+done
+if ((${#MISSING_FONTS[@]})); then
+  echo "Installing Nerd Fonts: ${MISSING_FONTS[*]}"
+  sudo pacman -Syu --needed --noconfirm --disable-download-timeout "${MISSING_FONTS[@]}"
+  fc-cache -f >/dev/null
+else
+  echo "Nerd Fonts already installed."
+fi
+
 echo "=== setup-03-devtools completed at $(date) ==="
