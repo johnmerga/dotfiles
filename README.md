@@ -156,3 +156,4 @@ symbol font supplies the glyphs. Useful when bandwidth is scarce.
 > no `~/.local/bin`. Scripts shipped by these dotfiles must be referenced from
 > the i3 config by absolute path (`$HOME/bin/...`), or the `exec` silently does
 > nothing.
+Sep 22-2026
