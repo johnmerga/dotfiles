@@ -102,3 +102,4 @@ autoload bashcompinit && bashcompinit
 
 # Added by Antigravity CLI installer
 export PATH="/home/john/.local/bin:$PATH"
+eval "$(~/.local/bin/mise activate zsh)"
