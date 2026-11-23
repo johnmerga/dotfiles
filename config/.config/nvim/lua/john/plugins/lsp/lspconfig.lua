@@ -34,6 +34,13 @@ return {
         end, opts("Go to next diagnostic"))
         keymap.set("n", "K", vim.lsp.buf.hover, opts("Show documentation for what is under cursor"))
         keymap.set("n", "<leader>rs", "<cmd>LspRestart<CR>", opts("Restart LSP"))
+        -- VS Code-style Ctrl+click: jump to definition under the mouse
+        keymap.set(
+          "n",
+          "<C-LeftMouse>",
+          "<LeftMouse><cmd>lua vim.lsp.buf.definition()<CR>",
+          opts("Go to definition (click)")
+        )
       end,
     })
 
@@ -93,6 +100,64 @@ return {
       },
     })
 
+    -- PHP: tuned for very large projects.
+    vim.lsp.config("intelephense", {
+      init_options = {
+        -- keep the index across reboots (default is the OS temp dir, which
+        -- forces a full re-index of a big project after every restart)
+        storagePath = vim.fn.stdpath("cache") .. "/intelephense",
+        globalStoragePath = vim.fn.stdpath("data") .. "/intelephense",
+      },
+      settings = {
+        intelephense = {
+          telemetry = { enabled = false },
+          -- default is 1MB: bigger files are silently NOT indexed, so symbols
+          -- defined in them can't be found by go-to-definition/references
+          files = {
+            maxSize = 10000000,
+            exclude = {
+              "**/.git/**",
+              "**/.svn/**",
+              "**/.hg/**",
+              "**/CVS/**",
+              "**/.DS_Store/**",
+              "**/node_modules/**",
+              "**/bower_components/**",
+              "**/vendor/**/{Tests,tests}/**",
+              "**/.history/**",
+              "**/vendor/**/vendor/**",
+            },
+          },
+          -- MB; default 256 is not enough to index a very large codebase
+          maxMemory = 4096,
+          -- default excludes vendor/** from "find references"
+          references = { exclude = {} },
+        },
+      },
+    })
+
+    -- TypeScript/JavaScript: vtsls wraps the same TS extension VS Code uses.
+    vim.lsp.config("vtsls", {
+      settings = {
+        vtsls = {
+          autoUseWorkspaceTsdk = true, -- use the project's own typescript
+          experimental = { completion = { enableServerSideFuzzyMatch = true } },
+        },
+        typescript = {
+          updateImportsOnFileMove = { enabled = "always" },
+          suggest = { completeFunctionCalls = true },
+          tsserver = { maxTsServerMemory = 8192 },
+          inlayHints = {
+            parameterNames = { enabled = "literals" },
+            functionLikeReturnTypes = { enabled = true },
+          },
+        },
+        javascript = {
+          updateImportsOnFileMove = { enabled = "always" },
+        },
+      },
+    })
+
     vim.lsp.config("lua_ls", {
       settings = {
         Lua = {
@@ -112,7 +177,7 @@ return {
     })
 
     -- Servers are installed and auto-enabled by mason-lspconfig (v2).
-    -- Plain servers (html, gopls, ts_ls, intelephense, cssls, tailwindcss,
-    -- prismals, ruff) need no extra config here beyond the "*" defaults.
+    -- Plain servers (html, gopls, cssls, tailwindcss, prismals, ruff) need no
+    -- extra config here beyond the "*" defaults.
   end,
 }

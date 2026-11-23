@@ -86,6 +86,72 @@ Start tmux and press your prefix (`Alt + a`) then `I` (capital i) to install plu
 
 ---
 
+## Neovim
+
+Plugins are pinned in `config/.config/nvim/lazy-lock.json`, and language
+servers, formatters and debug adapters are installed by Mason on first start.
+
+System requirements (all in `setup-01-bootstrap`/`setup-03-devtools`):
+`neovim` 0.12+, `ripgrep`, `fd`, `tree-sitter-cli` (builds Treesitter parsers),
+and Node (intelephense, vtsls and the debug adapters run on it).
+
+After pulling dotfile changes on another machine:
+
+```bash
+sudo pacman -S --needed tree-sitter-cli ripgrep fd
+nvim --headless "+Lazy! restore" +qa     # install the exact plugin versions from the lockfile
+nvim --headless "+MasonToolsInstallSync" +qa   # install LSPs / debug adapters
+```
+
+Use `:Lazy restore`, not `:Lazy sync`/`:Lazy update`. `sync` and `update` move
+plugins to their latest versions and rewrite the lockfile.
+
+### Search and replace (VS Code-style panel, `grug-far.nvim`)
+
+| Key | Action |
+|-----|--------|
+| `<leader>Sp` | Search/replace in the whole project |
+| `<leader>Sf` | Search/replace in the current file |
+| `<leader>Sw` | Search word under cursor (normal) or selection (visual) in project |
+| `<leader>Sb` | Search selection in current file (visual) |
+
+Inside the panel: `Alt+c` toggles Match Case, `Alt+w` toggles Whole Word, `Alt+r`
+toggles Regex. A search that spans several lines turns on `--multiline`
+automatically. `Enter` opens a result and keeps the panel open. `Up`/`Down`
+open the previous/next result, `\r` replaces all, `\q` sends the results to
+quickfix, `\c` closes the panel, and `g?` lists every key. To limit the search
+to certain files or folders, type them in the panel's **Paths** field.
+
+### Language servers
+
+- **TypeScript/JavaScript:** `vtsls`, the same engine as VS Code (it replaced
+  `ts_ls`).
+- **PHP:** `intelephense`, tuned for large projects. It indexes files up to
+  10 MB (the default limit is 1 MB), keeps its index in
+  `~/.cache/nvim/intelephense` so the index survives reboots, and includes
+  `vendor/` in Find References.
+- `gd` goes to the definition, `gR` lists references, and `Ctrl+click` goes to
+  the definition like in VS Code.
+
+### Debugging (`nvim-dap` + `nvim-dap-ui`)
+
+VS Code keys: `F5` start/continue, `Shift+F5` stop, `F9` toggle breakpoint,
+`F10` step over, `F11` step into, `Shift+F11` step out. The older
+`<leader><leader>…` keys still work.
+
+When you press `F5`, nvim-dap reads `.vscode/launch.json` from the directory
+you opened nvim in. Existing VS Code configs work unchanged, including
+comments, trailing commas and `${workspaceRoot}`.
+
+- **PHP / Xdebug in Docker:** open nvim in the same folder you open in VS Code,
+  press `F5` and pick **Listen for Xdebug**. Without a `launch.json`, use the
+  built-in **Listen for Xdebug (port 9093, /application -> cwd)** config and
+  open nvim in the folder that the container mounts at `/application`.
+- **Node/TS:** launch the current file, attach to a process, attach to
+  `--inspect` on port 9229, or launch Chrome.
+
+---
+
 ## Status bar & power warnings
 
 The i3 bar sits at the **bottom** of every output and reads

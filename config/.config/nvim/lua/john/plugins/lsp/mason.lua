@@ -25,7 +25,7 @@ return {
     mason_lspconfig.setup({
       -- list of servers for mason to install (and auto-enable via vim.lsp.enable)
       ensure_installed = {
-        "ts_ls", -- was tsserver
+        "vtsls", -- TS/JS: same engine as VS Code (replaces ts_ls)
         "html",
         "cssls",
         "tailwindcss",
@@ -39,8 +39,10 @@ return {
         "gopls",
         "intelephense", -- php (was configured but never auto-installed before)
       },
-      -- automatic_enable defaults to true in v2: installed servers are
-      -- enabled with vim.lsp.enable() automatically.
+      -- installed servers are enabled with vim.lsp.enable() automatically;
+      -- ts_ls is excluded so it can't run next to vtsls on machines where
+      -- it is still installed from before.
+      automatic_enable = { exclude = { "ts_ls" } },
     })
 
     mason_tool_installer.setup({
@@ -51,6 +53,8 @@ return {
         "black", -- python formatter
         "pylint", -- python linter
         "eslint_d", -- js linter
+        "php-debug-adapter", -- xdebug (vscode-php-debug)
+        "js-debug-adapter", -- node/chrome (vscode-js-debug)
       },
     })
   end,
