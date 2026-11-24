@@ -27,11 +27,19 @@ return {
         lua = { "stylua" },
         -- python = { "isort", "black" },
       },
-      format_on_save = {
-        lsp_format = "fallback",
-        async = false,
-        timeout_ms = 1000,
-      },
+      -- filetypes listed here are only formatted on demand (<leader>mp),
+      -- never on save
+      format_on_save = function(bufnr)
+        local manual_only = { php = true }
+        if manual_only[vim.bo[bufnr].filetype] then
+          return nil
+        end
+        return {
+          lsp_format = "fallback",
+          async = false,
+          timeout_ms = 1000,
+        }
+      end,
     })
 
     vim.keymap.set({ "n", "v" }, "<leader>mp", function()
