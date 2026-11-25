@@ -160,3 +160,7 @@ eval "$(starship init bash)"
 
 # Added by Antigravity CLI installer
 export PATH="/home/john/.local/bin:$PATH"
+
+complete -C /usr/bin/terraform terraform
+complete -C '/usr/local/bin/aws_completer' aws
+complete -C '/usr/local/bin/aws_completer' aws

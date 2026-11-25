@@ -82,16 +82,25 @@ export PATH=$HOME/bin:$PATH
 export VSCODE_FORWARD=http://localhost:3000
 # pyenv
 export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
+if [[ -d "$PYENV_ROOT/bin" ]] || (( $+commands[pyenv] )); then
+  export PATH="$PYENV_ROOT/bin:$PATH"
+  eval "$(pyenv init -)"
+fi
 
 # source ~/.local/share/powerlevel10k/powerlevel10k.zsh-theme
 
 # eval "$(ssh-agent -s)"
 # ssh-add ~/.ssh/github
-source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
-source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
-source ~/powerlevel10k/powerlevel10k.zsh-theme
+# Arch package path first, then a git clone in $HOME (other distros)
+for p10k_theme in \
+  /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme \
+  ~/powerlevel10k/powerlevel10k.zsh-theme; do
+  if [[ -r $p10k_theme ]]; then
+    source $p10k_theme
+    break
+  fi
+done
+unset p10k_theme
 #
 export PATH=/usr/local/bin/:$PATH
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
@@ -102,4 +111,8 @@ autoload bashcompinit && bashcompinit
 
 # Added by Antigravity CLI installer
 export PATH="/home/john/.local/bin:$PATH"
-eval "$(~/.local/bin/mise activate zsh)"
+[[ -x ~/.local/bin/mise ]] && eval "$(~/.local/bin/mise activate zsh)"
+
+autoload -U +X bashcompinit && bashcompinit
+complete -o nospace -C /usr/bin/terraform terraform
+complete -C '/usr/local/bin/aws_completer' aws
