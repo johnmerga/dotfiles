@@ -35,6 +35,7 @@ return {
         "gitignore",
         "query",
         "python",
+        "php",
       })
 
       -- autotag moved to its own plugin setup (no longer a treesitter module)
@@ -48,6 +49,10 @@ return {
           -- pcall: silently skip filetypes without an installed parser
           if pcall(vim.treesitter.start, args.buf) then
             vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+            -- fold by syntax scope (class, function, if/else, ...), like
+            -- VS Code. Folds start open; see foldlevel in core/options.lua.
+            vim.wo[0][0].foldmethod = "expr"
+            vim.wo[0][0].foldexpr = "v:lua.vim.treesitter.foldexpr()"
           end
         end,
       })

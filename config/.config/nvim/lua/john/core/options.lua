@@ -39,6 +39,39 @@ vim.o.clipboard = "unnamedplus"
 opt.splitright = true -- split vertical window to the right
 opt.splitbelow = true -- split horizontal window to the bottom
 
+-- folding (the fold method itself is set per buffer in nvim-treesitter.lua)
+opt.foldlevel = 99 -- open files with every fold expanded
+opt.foldlevelstart = 99
+opt.foldtext = "" -- a closed fold shows its first line with normal highlighting
+opt.fillchars:append({ fold = " " }) -- no trailing dots after a closed fold
+
+-- Fold arrow next to the line number, like the VS Code gutter:
+--   angle-down  = an open fold starts on this line
+--   angle-right = closed fold
+-- The built-in 'foldcolumn' is not used because it prints nesting-level
+-- digits when it is one cell wide.
+function _G.john_fold_icon()
+  if vim.bo.buftype ~= "" then
+    return "" -- file tree, search panel, terminals, ...
+  end
+  local lnum = vim.v.lnum
+  local icon = " "
+  if vim.v.virtnum == 0 then
+    if vim.fn.foldclosed(lnum) == lnum then
+      icon = "\u{f105}" -- nf-fa-angle_right
+    elseif vim.fn.foldlevel(lnum) > 0 then
+      -- Treesitter marks the first line of a fold with ">level"
+      local ok, expr = pcall(vim.treesitter.foldexpr, lnum)
+      local starts = ok and type(expr) == "string" and expr:sub(1, 1) == ">"
+      if starts or vim.fn.foldlevel(lnum) > vim.fn.foldlevel(lnum - 1) then
+        icon = "\u{f107}" -- nf-fa-angle_down
+      end
+    end
+  end
+  return " %#FoldColumn#" .. icon .. "%* "
+end
+opt.statuscolumn = "%s%=%l%{%v:lua.john_fold_icon()%}"
+
 -- turn off swapfile
 opt.swapfile = false
 
